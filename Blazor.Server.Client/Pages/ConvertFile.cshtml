@@ -1,0 +1,53 @@
+﻿@using Blazor.Server.Client.Utils;
+@page "/convertfile"
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime
+
+<h1>Convert file</h1>
+
+@if (files == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="form-group">
+        <select class="custom-select" onchange="@UpdateContent">
+            <option value="">-- Select File --</option>
+            @foreach (var file in files)
+            {
+                <option>@file</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
+        <textarea class="form-control" rows="3">@fileContent</textarea>
+    </div>
+    <div class="form-group">
+        <button type="button" class="btn btn-primary" onclick="@Convert">Convert</button>
+    </div>
+}
+@functions
+{
+    List<string> files;
+    string fileName { get; set; }
+    string fileContent { get; set; }
+
+    protected override async Task OnInitAsync()
+    {
+        files = await Http.GetJsonAsync<List<string>>("api/SampleData/getFiles");
+    }
+
+    public async Task UpdateContent(UIChangeEventArgs selectedEvent)
+    {
+        fileName = selectedEvent.Value.ToString();
+        fileContent = await Http.GetStringAsync($"api/SampleData/getFileContent?fileName={fileName}");
+        this.StateHasChanged();
+    }
+
+    public void Convert()
+    {
+        FileUtil util = new FileUtil(JsRuntime);
+        util.SaveAs(fileName, System.Text.Encoding.ASCII.GetBytes(fileContent));
+    }
+}
